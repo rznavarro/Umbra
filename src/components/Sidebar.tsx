@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ActiveSection = 'dashboard' | 'consultation' | 'results' | 'history';
+type ActiveSection = 'dashboard' | 'consultation' | 'results' | 'history' | 'ai-agent';
 
 interface SidebarProps {
   activeSection: ActiveSection;
@@ -11,6 +11,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
   const menuItems = [
     { id: 'dashboard' as const, label: 'INICIO' },
     { id: 'consultation' as const, label: 'ANÁLISIS LEGAL' },
+    { id: 'ai-agent' as const, label: 'IA AGENTE LEGAL' },
     { id: 'results' as const, label: 'INFORMES' },
     { id: 'history' as const, label: 'SALIR' },
   ];

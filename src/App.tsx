@@ -4,8 +4,9 @@ import { Dashboard } from './components/Dashboard';
 import { ConsultationForm } from './components/ConsultationForm';
 import { Results } from './components/Results';
 import { History } from './components/History';
+import { AILegalAgent } from './components/AILegalAgent';
 
-type ActiveSection = 'dashboard' | 'consultation' | 'results' | 'history';
+type ActiveSection = 'dashboard' | 'consultation' | 'results' | 'history' | 'ai-agent';
 
 function App() {
   const [activeSection, setActiveSection] = useState<ActiveSection>('dashboard');
@@ -28,6 +29,8 @@ function App() {
         return <Results data={consultationData} />;
       case 'history':
         return <History />;
+      case 'ai-agent':
+        return <AILegalAgent />;
       default:
         return <Dashboard onStartConsultation={() => setActiveSection('consultation')} />;
     }
