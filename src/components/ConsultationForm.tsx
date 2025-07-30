@@ -89,7 +89,38 @@ export function ConsultationForm({ onSubmit }: ConsultationFormProps) {
       return;
     }
 
-    onSubmit(formData);
+    // Enviar datos al webhook de n8n
+    sendToWebhook(formData);
+  };
+
+  const sendToWebhook = async (data: ConsultationData) => {
+    try {
+      // Mostrar mensaje de procesamiento
+      alert('Procesando análisis legal...');
+      
+      const response = await fetch('https://n8n.srv880021.hstgr.cloud/webhook-test/Legal-Inmo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...data,
+          timestamp: new Date().toISOString(),
+          sistema: 'UMBRA Legal Analysis v1.0'
+        })
+      });
+
+      if (response.ok) {
+        alert('Análisis legal enviado correctamente');
+        // Continuar con el flujo normal
+        onSubmit(data);
+      } else {
+        throw new Error(`Error del servidor: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error enviando al webhook:', error);
+      alert('Error al enviar el análisis. Por favor intente nuevamente.');
+    }
   };
 
   return (
