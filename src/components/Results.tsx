@@ -48,6 +48,14 @@ export function Results({ data }: ResultsProps) {
               <p className="text-gray-400 text-sm">Vendedor/Propietario</p>
               <p className="text-white font-medium">{data.vendedor || 'No especificado'}</p>
             </div>
+            <div>
+              <p className="text-gray-400 text-sm">Correo Electrónico</p>
+              <p className="text-white font-medium">{data.correo || 'No especificado'}</p>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm">País</p>
+              <p className="text-white font-medium">{data.pais || 'No especificado'}</p>
+            </div>
           </div>
         </div>
 
