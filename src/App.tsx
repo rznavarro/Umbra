@@ -10,23 +10,18 @@ type ActiveSection = 'dashboard' | 'consultation' | 'results' | 'history' | 'ai-
 
 function App() {
   const [activeSection, setActiveSection] = useState<ActiveSection>('dashboard');
-  const [consultationData, setConsultationData] = useState<any>(null);
+  // ELIMINADO: consultationData y setConsultationData ya no son necesarios
 
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
         return <Dashboard onStartConsultation={() => setActiveSection('consultation')} />;
       case 'consultation':
-        return (
-          <ConsultationForm 
-            onSubmit={(data) => {
-              setConsultationData(data);
-              setActiveSection('results');
-            }} 
-          />
-        );
+        // CAMBIADO: Ya no pasa props onSubmit al ConsultationForm
+        return <ConsultationForm />;
       case 'results':
-        return <Results data={consultationData} />;
+        // CAMBIADO: Results ya no recibe data como prop
+        return <Results />;
       case 'history':
         return <History />;
       case 'ai-agent':
