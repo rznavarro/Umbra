@@ -113,7 +113,7 @@ export function ConsultationForm() {
       });
 
       if (response.ok) {
-        // NUEVO: Recibir la respuesta del informe generado por la IA
+        // Recibir la respuesta del informe generado por la IA
         const result = await response.text();
         
         // Guardar el informe de IA y mostrar pantalla de éxito
@@ -144,38 +144,7 @@ export function ConsultationForm() {
     }
   };
 
-  // NUEVA PANTALLA: Loading mientras la IA procesa
-  if (isSubmitting) {
-    return (
-      <div className="p-8 font-mono">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-gray-900 border border-yellow-500 p-8 text-center">
-            <h1 className="text-3xl font-bold text-yellow-400 mb-4">⏳ PROCESANDO ANÁLISIS</h1>
-            <p className="text-white mb-4">
-              La IA está generando su informe legal personalizado...
-            </p>
-            <p className="text-gray-400 mb-6">
-              Este proceso puede tomar entre 30-90 segundos dependiendo de la complejidad del caso.
-            </p>
-            
-            {/* Barra de progreso animada */}
-            <div className="w-full bg-gray-700 h-2 mb-4">
-              <div className="bg-yellow-400 h-2 animate-pulse" style={{width: '60%'}}></div>
-            </div>
-            
-            <div className="text-gray-400 text-sm space-y-2">
-              <p>⚡ Analizando documentación legal...</p>
-              <p>🔍 Evaluando riesgos jurídicos...</p>
-              <p>📄 Generando recomendaciones...</p>
-              <p>📧 Preparando envío por correo...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // NUEVA PANTALLA: Mostrar el informe de IA cuando esté listo
+  // Mostrar el informe de IA cuando esté listo
   if (submitSuccess && aiReport) {
     return (
       <div className="p-8 font-mono">
@@ -183,9 +152,6 @@ export function ConsultationForm() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-green-400 mb-4">✓ INFORME LEGAL GENERADO</h1>
             <p className="text-gray-400">Análisis completado por IA especializada en derecho inmobiliario</p>
-            <div className="mt-4 text-green-400 text-sm">
-              <span className="animate-pulse">●</span> Informe enviado también por correo electrónico
-            </div>
           </div>
 
           {/* Contenedor del informe */}
@@ -226,7 +192,7 @@ export function ConsultationForm() {
     );
   }
 
-  // PANTALLA ORIGINAL: Formulario (solo se muestra si no está procesando ni mostrando resultados)
+  // Formulario principal
   return (
     <div className="p-8 font-mono">
       <div className="max-w-4xl mx-auto">
@@ -423,7 +389,7 @@ export function ConsultationForm() {
                   : 'bg-white text-black hover:bg-gray-200'
               }`}
             >
-              {isSubmitting ? '&gt; GENERANDO INFORME CON IA...' : '&gt; ANALIZAR SITUACIÓN LEGAL'}
+              {isSubmitting ? '> PROCESANDO...' : '> ANALIZAR SITUACIÓN LEGAL'}
             </button>
           </div>
         </form>
