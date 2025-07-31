@@ -446,11 +446,6 @@ export function ConsultationForm() {
             <button
               type="submit"
               disabled={isSubmitting}
-              disabled={isSubmitting}
-              className={`w-full py-4 px-6 font-bold transition-colors ${
-                isSubmitting 
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                  : 'bg-white text-black hover:bg-gray-200'
               className={`w-full py-4 px-6 font-bold transition-colors ${
                 isSubmitting 
                   ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
