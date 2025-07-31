@@ -13,11 +13,8 @@ interface ConsultationData {
   notas: string;
 }
 
-interface ConsultationFormProps {
-  onSubmit: (data: ConsultationData) => void;
-}
-
-export function ConsultationForm({ onSubmit }: ConsultationFormProps) {
+// Ya no necesitamos la prop onSubmit
+export function ConsultationForm() {
   const [formData, setFormData] = useState<ConsultationData>({
     direccion: '',
     tipoPropiedad: '',
@@ -30,6 +27,11 @@ export function ConsultationForm({ onSubmit }: ConsultationFormProps) {
     pais: '',
     notas: ''
   });
+
+  // NUEVOS ESTADOS para manejar la respuesta de IA
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [aiReport, setAiReport] = useState<string>('');
 
   const tiposPropiedad = [
     'Apartamento',
@@ -93,11 +95,11 @@ export function ConsultationForm({ onSubmit }: ConsultationFormProps) {
     sendToWebhook(formData);
   };
 
+  // FUNCIÓN ACTUALIZADA para recibir respuesta de IA
   const sendToWebhook = async (data: ConsultationData) => {
+    setIsSubmitting(true); // Activar loading state
+    
     try {
-      // Mostrar mensaje de procesamiento
-      alert('Procesando análisis legal...');
-      
       const response = await fetch('https://n8n.srv880021.hstgr.cloud/webhook-test/Legal-Inmo', {
         method: 'POST',
         headers: {
@@ -111,18 +113,120 @@ export function ConsultationForm({ onSubmit }: ConsultationFormProps) {
       });
 
       if (response.ok) {
-        alert('Análisis legal enviado correctamente');
-        // Continuar con el flujo normal
-        onSubmit(data);
+        // NUEVO: Recibir la respuesta del informe generado por la IA
+        const result = await response.text();
+        
+        // Guardar el informe de IA y mostrar pantalla de éxito
+        setAiReport(result);
+        setSubmitSuccess(true);
+        
+        // Limpiar formulario después de envío exitoso
+        setFormData({
+          direccion: '',
+          tipoPropiedad: '',
+          superficie: '',
+          tipoOperacion: '',
+          precio: '',
+          vendedor: '',
+          comprador: '',
+          correo: '',
+          pais: '',
+          notas: ''
+        });
       } else {
         throw new Error(`Error del servidor: ${response.status}`);
       }
     } catch (error) {
       console.error('Error enviando al webhook:', error);
       alert('Error al enviar el análisis. Por favor intente nuevamente.');
+    } finally {
+      setIsSubmitting(false); // Desactivar loading state
     }
   };
 
+  // NUEVA PANTALLA: Loading mientras la IA procesa
+  if (isSubmitting) {
+    return (
+      <div className="p-8 font-mono">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-gray-900 border border-yellow-500 p-8 text-center">
+            <h1 className="text-3xl font-bold text-yellow-400 mb-4">⏳ PROCESANDO ANÁLISIS</h1>
+            <p className="text-white mb-4">
+              La IA está generando su informe legal personalizado...
+            </p>
+            <p className="text-gray-400 mb-6">
+              Este proceso puede tomar entre 30-90 segundos dependiendo de la complejidad del caso.
+            </p>
+            
+            {/* Barra de progreso animada */}
+            <div className="w-full bg-gray-700 h-2 mb-4">
+              <div className="bg-yellow-400 h-2 animate-pulse" style={{width: '60%'}}></div>
+            </div>
+            
+            <div className="text-gray-400 text-sm space-y-2">
+              <p>⚡ Analizando documentación legal...</p>
+              <p>🔍 Evaluando riesgos jurídicos...</p>
+              <p>📄 Generando recomendaciones...</p>
+              <p>📧 Preparando envío por correo...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // NUEVA PANTALLA: Mostrar el informe de IA cuando esté listo
+  if (submitSuccess && aiReport) {
+    return (
+      <div className="p-8 font-mono">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-green-400 mb-4">✓ INFORME LEGAL GENERADO</h1>
+            <p className="text-gray-400">Análisis completado por IA especializada en derecho inmobiliario</p>
+            <div className="mt-4 text-green-400 text-sm">
+              <span className="animate-pulse">●</span> Informe enviado también por correo electrónico
+            </div>
+          </div>
+
+          {/* Contenedor del informe */}
+          <div className="bg-gray-900 border border-gray-800 p-6 mb-6 max-h-96 overflow-y-auto">
+            <h2 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">
+              ANÁLISIS LEGAL DETALLADO
+            </h2>
+            <div className="whitespace-pre-wrap text-gray-100 font-mono text-sm leading-relaxed">
+              {aiReport}
+            </div>
+          </div>
+
+          {/* Botones de acción */}
+          <div className="flex gap-4">
+            <button
+              onClick={() => {
+                setSubmitSuccess(false);
+                setAiReport('');
+              }}
+              className="bg-white text-black px-6 py-3 font-bold hover:bg-gray-200 transition-colors"
+            >
+              &gt; REALIZAR NUEVO ANÁLISIS
+            </button>
+            
+            <button
+              onClick={() => window.print()}
+              className="bg-gray-700 text-white px-6 py-3 font-bold hover:bg-gray-600 transition-colors border border-gray-600"
+            >
+              &gt; IMPRIMIR INFORME
+            </button>
+          </div>
+
+          <div className="mt-6 text-center text-gray-500 text-xs">
+            <p>UMBRA Legal Analysis System - Informe generado el {new Date().toLocaleDateString('es-ES')}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // PANTALLA ORIGINAL: Formulario (solo se muestra si no está procesando ni mostrando resultados)
   return (
     <div className="p-8 font-mono">
       <div className="max-w-4xl mx-auto">
@@ -312,9 +416,14 @@ export function ConsultationForm({ onSubmit }: ConsultationFormProps) {
           <div className="bg-gray-900 border border-gray-800 p-6">
             <button
               type="submit"
-              className="w-full bg-white text-black py-4 px-6 font-bold hover:bg-gray-200 transition-colors"
+              disabled={isSubmitting}
+              className={`w-full py-4 px-6 font-bold transition-colors ${
+                isSubmitting 
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                  : 'bg-white text-black hover:bg-gray-200'
+              }`}
             >
-              &gt; ANALIZAR SITUACIÓN LEGAL
+              {isSubmitting ? '&gt; GENERANDO INFORME CON IA...' : '&gt; ANALIZAR SITUACIÓN LEGAL'}
             </button>
           </div>
         </form>
