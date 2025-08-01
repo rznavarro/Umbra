@@ -99,8 +99,12 @@ export function ConsultationForm() {
   const sendToWebhook = async (data: ConsultationData) => {
     setIsSubmitting(true); // Activar loading state
 
+    // URL del webhook - verificar que esté correcta
+    const webhookUrl = 'https://n8n.srv880021.hstgr.cloud/webhook-test/Legal-Inmo';
+    console.log('🔗 Conectando al webhook:', webhookUrl);
+
     try {
-      // Preparar datos en formato más simple para n8n
+      // Preparar datos para n8n
       const webhookData = {
         direccion: data.direccion,
         tipoPropiedad: data.tipoPropiedad,
@@ -115,24 +119,144 @@ export function ConsultationForm() {
         sistema: 'UMBRA Legal Analysis v1.0'
       };
 
-      console.log('Enviando datos al webhook:', webhookData);
+      console.log('📤 Enviando datos:', webhookData);
+      console.log('📤 Datos JSON:', JSON.stringify(webhookData, null, 2));
 
-      const response = await fetch('https://n8n.srv880021.hstgr.cloud/webhook-test/Legal-Inmo', {
+      // Realizar petición con timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'UMBRA-Legal-System/1.0'
         },
-        body: JSON.stringify(webhookData)
+        body: JSON.stringify(webhookData),
+        signal: controller.signal
       });
 
-      console.log('Respuesta del webhook - Status:', response.status);
-      console.log('Respuesta del webhook - Headers:', response.headers);
+      clearTimeout(timeoutId);
+
+      console.log('📥 Status de respuesta:', response.status);
+      console.log('📥 Headers de respuesta:', Object.fromEntries(response.headers.entries()));
+      console.log('📥 Response OK:', response.ok);
 
       if (response.ok) {
+        const contentType = response.headers.get('content-type');
+        console.log('📥 Content-Type:', contentType);
+
         try {
-          // Intentar parsear como JSON
-          const result = await response.json();
-          console.log('Respuesta JSON recibida:', result);
+          if (contentType && contentType.includes('application/json')) {
+            const result = await response.json();
+            console.log('📥 Respuesta JSON:', result);
+            
+            // Buscar el informe en diferentes ubicaciones posibles
+            const aiReportContent = result.output || 
+                                   result.message || 
+                                   result.data || 
+                                   result.response ||
+                                   result.informe ||
+                                   result.analisis ||
+                                   JSON.stringify(result, null, 2);
+
+            setAiReport(aiReportContent);
+            setSubmitSuccess(true);
+          } else {
+            // Si no es JSON, tratar como texto
+            const textResult = await response.text();
+            console.log('📥 Respuesta texto:', textResult);
+            setAiReport(textResult);
+            setSubmitSuccess(true);
+          }
+        } catch (parseError) {
+          console.error('❌ Error parseando respuesta:', parseError);
+          // Fallback: obtener como texto
+          const textResult = await response.text();
+          console.log('📥 Fallback texto:', textResult);
+          setAiReport(textResult || 'Análisis completado - Respuesta recibida del servidor');
+          setSubmitSuccess(true);
+        }
+      } else {
+        // Error del servidor
+        let errorMessage = `Error ${response.status}: ${response.statusText}`;
+        
+        try {
+          const errorData = await response.json();
+          console.error('❌ Error JSON:', errorData);
+          errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
+        } catch {
+          const errorText = await response.text();
+          console.error('❌ Error texto:', errorText);
+          errorMessage = errorText || errorMessage;
+        }
+        
+        throw new Error(errorMessage);
+      }
+    } catch (error) {
+      console.error('❌ Error completo:', error);
+      
+      if (error.name === 'AbortError') {
+        alert('⏱️ Timeout: El servidor tardó demasiado en responder. Intenta nuevamente.');
+      } else if (error instanceof TypeError && error.message.includes('fetch')) {
+        alert('🌐 Error de conexión: No se pudo conectar con el servidor n8n. Verifica:\n\n1. Tu conexión a internet\n2. Que el webhook esté activo en n8n\n3. Que la URL sea correcta');
+      } else if (error.message.includes('500')) {
+        alert('⚙️ Error del workflow n8n (500):\n\nEl workflow no pudo iniciarse. Verifica:\n\n1. Que el webhook esté activado\n2. Que el workflow esté guardado\n3. Que no haya errores en los nodos\n4. Los logs de n8n para más detalles');
+      } else if (error.message.includes('404')) {
+        alert('🔍 Webhook no encontrado (404):\n\nLa URL del webhook no existe. Verifica:\n\n1. La URL esté correcta\n2. El webhook esté publicado\n3. El path sea exacto');
+      } else {
+        alert(`❌ Error al enviar análisis:\n\n${error.message}\n\nRevisa la consola del navegador para más detalles.`);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Función para probar la conexión al webhook
+  const testWebhookConnection = async () => {
+    console.log('🧪 Probando conexión al webhook...');
+    
+    try {
+      const response = await fetch('https://n8n.srv880021.hstgr.cloud/webhook-test/Legal-Inmo', {
+        method: 'OPTIONS',
+        headers: {
+          'Origin': window.location.origin
+        }
+      });
+      
+      console.log('🧪 Test OPTIONS - Status:', response.status);
+      console.log('🧪 Test OPTIONS - Headers:', Object.fromEntries(response.headers.entries()));
+      
+    } catch (error) {
+      console.error('🧪 Test falló:', error);
+    }
+  };
+
+  // Probar conexión al cargar el componente
+  React.useEffect(() => {
+    testWebhookConnection();
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validación básica
+    if (!formData.direccion || !formData.tipoPropiedad || !formData.correo || !formData.pais) {
+      alert('Por favor complete los campos obligatorios');
+      return;
+    }
+
+    // Validación de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.correo)) {
+      alert('Por favor ingrese un correo electrónico válido');
+      return;
+    }
+
+    console.log('🚀 Iniciando envío de análisis...');
+    sendToWebhook(formData);
+  };
           
           // Buscar el informe en diferentes posibles ubicaciones
           const aiReportContent = result.output || 
