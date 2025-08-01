@@ -172,14 +172,14 @@ export function ConsultationForm() {
               }}
               className="bg-white text-black px-6 py-3 font-bold hover:bg-gray-200 transition-colors"
             >
-              > REALIZAR NUEVO ANÁLISIS
+              REALIZAR NUEVO ANÁLISIS
             </button>
             
             <button
               onClick={() => window.print()}
               className="bg-gray-700 text-white px-6 py-3 font-bold hover:bg-gray-600 transition-colors border border-gray-600"
             >
-              > IMPRIMIR INFORME
+              IMPRIMIR INFORME
             </button>
           </div>
 
@@ -388,7 +388,7 @@ export function ConsultationForm() {
                   : 'bg-white text-black hover:bg-gray-200'
               }`}
             >
-              {isSubmitting ? '> PROCESANDO...' : '> ANALIZAR SITUACIÓN LEGAL'}
+              {isSubmitting ? 'PROCESANDO...' : 'ANALIZAR SITUACIÓN LEGAL'}
             </button>
           </div>
         </form>
