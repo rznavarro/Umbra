@@ -104,6 +104,7 @@ export function ConsultationForm() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           ...data,
@@ -113,10 +114,11 @@ export function ConsultationForm() {
 
       if (response.ok) {
         // Recibir la respuesta del informe generado por la IA
-        const result = await response.text();
+        const result = await response.json();
+        const aiReportContent = result.output || result.message || JSON.stringify(result);
 
         // Guardar el informe de IA y mostrar pantalla de éxito
-        setAiReport(result);
+        setAiReport(aiReportContent);
         setSubmitSuccess(true);
 
         // Limpiar formulario después de envío exitoso
@@ -133,11 +135,17 @@ export function ConsultationForm() {
           notas: ''
         });
       } else {
-        throw new Error(`Error del servidor: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error del servidor: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.error('Error enviando al webhook:', error);
-      alert('Error al enviar el análisis. Por favor intente nuevamente.');
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        alert('Error de conexión con el servidor. Verifique su conexión a internet.');
+      } else {
+        alert(`Error al enviar el análisis: ${error.message}`);
+      }
     } finally {
       setIsSubmitting(false); // Desactivar loading state
     }
