@@ -100,26 +100,57 @@ export function ConsultationForm() {
     setIsSubmitting(true); // Activar loading state
 
     try {
+      // Preparar datos en formato más simple para n8n
+      const webhookData = {
+        direccion: data.direccion,
+        tipoPropiedad: data.tipoPropiedad,
+        superficie: data.superficie,
+        tipoOperacion: data.tipoOperacion,
+        precio: data.precio,
+        vendedor: data.vendedor,
+        comprador: data.comprador,
+        correo: data.correo,
+        pais: data.pais,
+        notas: data.notas,
+        sistema: 'UMBRA Legal Analysis v1.0'
+      };
+
+      console.log('Enviando datos al webhook:', webhookData);
+
       const response = await fetch('https://n8n.srv880021.hstgr.cloud/webhook-test/Legal-Inmo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          ...data,
-          sistema: 'UMBRA Legal Analysis v1.0'
-        })
+        body: JSON.stringify(webhookData)
       });
 
-      if (response.ok) {
-        // Recibir la respuesta del informe generado por la IA
-        const result = await response.json();
-        const aiReportContent = result.output || result.message || JSON.stringify(result);
+      console.log('Respuesta del webhook - Status:', response.status);
+      console.log('Respuesta del webhook - Headers:', response.headers);
 
-        // Guardar el informe de IA y mostrar pantalla de éxito
-        setAiReport(aiReportContent);
-        setSubmitSuccess(true);
+      if (response.ok) {
+        try {
+          // Intentar parsear como JSON
+          const result = await response.json();
+          console.log('Respuesta JSON recibida:', result);
+          
+          // Buscar el informe en diferentes posibles ubicaciones
+          const aiReportContent = result.output || 
+                                 result.message || 
+                                 result.data || 
+                                 result.response ||
+                                 JSON.stringify(result, null, 2);
+
+          // Guardar el informe de IA y mostrar pantalla de éxito
+          setAiReport(aiReportContent);
+          setSubmitSuccess(true);
+        } catch (jsonError) {
+          // Si no es JSON válido, usar como texto plano
+          const textResult = await response.text();
+          console.log('Respuesta de texto recibida:', textResult);
+          setAiReport(textResult);
+          setSubmitSuccess(true);
+        }
 
         // Limpiar formulario después de envío exitoso
         setFormData({
@@ -135,14 +166,25 @@ export function ConsultationForm() {
           notas: ''
         });
       } else {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Error del servidor: ${response.status} - ${errorText}`);
+        let errorMessage;
+        try {
+          const errorData = await response.json();
+          console.error('Error JSON response:', errorData);
+          errorMessage = errorData.message || errorData.error || JSON.stringify(errorData);
+        } catch {
+          const errorText = await response.text();
+          console.error('Error text response:', errorText);
+          errorMessage = errorText;
+        }
+        
+        throw new Error(`Error del servidor (${response.status}): ${errorMessage}`);
       }
     } catch (error) {
       console.error('Error enviando al webhook:', error);
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        alert('Error de conexión con el servidor. Verifique su conexión a internet.');
+        alert('Error de conexión: No se pudo conectar con el servidor de n8n. Verifique su conexión a internet.');
+      } else if (error.message.includes('500')) {
+        alert('Error del workflow de n8n: El workflow no pudo iniciarse. Verifique que el webhook esté activo y configurado correctamente en n8n.');
       } else {
         alert(`Error al enviar el análisis: ${error.message}`);
       }
