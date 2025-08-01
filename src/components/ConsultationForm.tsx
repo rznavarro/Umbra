@@ -107,7 +107,6 @@ export function ConsultationForm() {
         },
         body: JSON.stringify({
           ...data,
-          timestamp: new Date().toISOString(),
           sistema: 'UMBRA Legal Analysis v1.0'
         })
       });
